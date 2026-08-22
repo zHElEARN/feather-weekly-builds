@@ -1,0 +1,19 @@
+{
+  "name": "Feather Nightly Builds",
+  "identifier": "com.zhelearn.feather-nightly-builds",
+  "iconURL": "https://github.com/khcrysalis/Feather/blob/v1.x/iOS/Resources/Icons/Main/Mac@3x.png?raw=true",
+  "website": "https://github.com/zHElEARN/feather-nightly-builds",
+  "apps": [
+    {
+      "name": "Feather (NIGHTLY)",
+      "bundleIdentifier": "thewonderofyou.Feather",
+      "developerName": "Samara",
+      "iconURL": "https://github.com/khcrysalis/Feather/blob/v1.x/iOS/Resources/Icons/Main/Mac@3x.png?raw=true",
+      "localizedDescription": "NIGHTLY-enabled build of official Feather releases. Sign it with your own certificate.",
+      "subtitle": "On-device signing application",
+      "tintColor": "848ef9",
+      "versions": []
+    }
+  ],
+  "news": []
+}

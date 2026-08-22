@@ -1,0 +1,192 @@
+name: Build Feather (NIGHTLY) from official Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if this official release was already built
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-feather-nightly
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout own repository
+        uses: actions/checkout@v4
+
+      - name: Get latest official Feather release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$(gh api repos/claration/Feather/releases/latest --jq -r '.tag_name')"
+          DATE="$(gh api repos/claration/Feather/releases/latest --jq -r '.published_at')"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "date=${DATE}" >> "${GITHUB_OUTPUT}"
+          echo "Latest official release: ${TAG} (${DATE})"
+
+      - name: Check whether this release was already built
+        id: check
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          FORCE="${{ inputs.force == 'true' }}"
+          LAST="$(cat last-built-tag 2>/dev/null || true)"
+          if [ "${FORCE}" = "true" ] || [ "${LAST}" != "${TAG}" ]; then
+            echo "build=true" >> "${GITHUB_OUTPUT}"
+            echo "Building ${TAG} (last built: ${LAST:-none})"
+          else
+            echo "build=false" >> "${GITHUB_OUTPUT}"
+            echo "No new release: ${TAG} already built"
+          fi
+
+      - name: Select Xcode
+        if: steps.check.outputs.build == 'true'
+        run: |
+          if [ -d /Applications/Xcode_26.3.0.app ]; then
+            XCODE="/Applications/Xcode_26.3.0.app"
+          else
+            XCODE="$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -1)"
+          fi
+          sudo xcode-select -s "${XCODE}"
+
+      - name: Checkout Feather source
+        if: steps.check.outputs.build == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: claration/Feather
+          ref: ${{ steps.release.outputs.tag }}
+          path: feather
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Enable NIGHTLY compilation condition
+        if: steps.check.outputs.build == 'true'
+        run: |
+          python3 - <<'EOF'
+          import pathlib
+          p = pathlib.Path("feather/Feather.xcodeproj/project.pbxproj")
+          text = p.read_text()
+          old = 'SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";'
+          new = 'SWIFT_ACTIVE_COMPILATION_CONDITIONS = "NIGHTLY";'
+          count = text.count(old)
+          if count == 0:
+              raise SystemExit("NIGHTLY patch failed: empty Release config not found")
+          p.write_text(text.replace(old, new))
+          print(f"NIGHTLY enabled ({count} Release config(s) patched)")
+          EOF
+
+      - name: Build Feather IPA
+        if: steps.check.outputs.build == 'true'
+        working-directory: feather
+        run: make iphoneos
+
+      - name: Verify NIGHTLY actually took effect
+        if: steps.check.outputs.build == 'true'
+        run: |
+          set -euo pipefail
+          APP="feather/_build/Payload/Feather.app"
+          BIN="${APP}/Feather"
+          test -x "${BIN}"
+          test -f feather/packages/Feather.ipa
+          /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "${APP}/Info.plist" | grep -qx "thewonderofyou.Feather"
+
+          MARKER='github.com/khcrysalis/Feather'
+          strings -a "${BIN}" > /tmp/feather.strings
+
+          curl -fsSL -o /tmp/official.ipa \
+            "https://github.com/claration/Feather/releases/download/${{ steps.release.outputs.tag }}/Feather.ipa"
+          rm -rf /tmp/official && mkdir -p /tmp/official
+          unzip -qo /tmp/official.ipa -d /tmp/official
+          OBIN="$(find /tmp/official/Payload -maxdepth 2 -name Feather -type f | head -1)"
+          strings -a "${OBIN}" > /tmp/official.strings
+
+          if ! grep -qF "${MARKER}" /tmp/official.strings; then
+            echo "FAIL: marker absent from official stock build; verification is void"
+            exit 1
+          fi
+          if grep -qF "${MARKER}" /tmp/feather.strings; then
+            echo "FAIL: marker present in our build; NIGHTLY did not apply"
+            exit 1
+          fi
+          if grep -qF 'SigningEntitlementsView' /tmp/official.strings; then
+            echo "FAIL: positive marker present in stock build; not discriminating"
+            exit 1
+          fi
+          if ! grep -qF 'SigningEntitlementsView' /tmp/feather.strings; then
+            echo "FAIL: SigningEntitlementsView absent from our build"
+            exit 1
+          fi
+          if ! grep -qF 'ZsignHandler' /tmp/official.strings; then
+            echo "FAIL: ZsignHandler missing from official build; extraction unreliable"
+            exit 1
+          fi
+          if ! grep -qF 'ZsignHandler' /tmp/feather.strings; then
+            echo "FAIL: ZsignHandler missing from our build; extraction unreliable"
+            exit 1
+          fi
+          echo "NIGHTLY verification passed"
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.build == 'true'
+        id: create_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+          RELEASE_TAG="${TAG}-nightly"
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release delete "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --yes --cleanup-tag
+          fi
+          gh release create "${RELEASE_TAG}" feather/packages/Feather.ipa \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "Feather ${TAG} (NIGHTLY)" \
+            --notes "NIGHTLY-enabled build of official Feather ${TAG}."
+          echo "release_tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Update app-repo.json
+        if: steps.check.outputs.build == 'true'
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          VERSION="${TAG#v}"
+          DATE="${{ steps.release.outputs.date }}"
+          RELEASE_TAG="${{ steps.create_release.outputs.release_tag }}"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/Feather.ipa"
+          SIZE="$(stat -f%z feather/packages/Feather.ipa)"
+
+          jq --arg version "${VERSION}" \
+             --arg date "${DATE}" \
+             --arg url "${URL}" \
+             --argjson size "${SIZE}" '
+            .apps[0].version = $version |
+            .apps[0].versionDate = $date |
+            .apps[0].downloadURL = $url |
+            .apps[0].versions = ([{version: $version, date: $date, downloadURL: $url, size: $size}] + (.apps[0].versions // []))
+          ' app-repo.json > app-repo.json.tmp
+          mv app-repo.json.tmp app-repo.json
+          jq empty app-repo.json
+
+      - name: Commit updated source and marker
+        if: steps.check.outputs.build == 'true'
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          echo "${TAG}" > last-built-tag
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app-repo.json last-built-tag
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: build Feather ${TAG} (NIGHTLY)"
+            git push origin HEAD:main
+          fi
