@@ -12,7 +12,17 @@
       "localizedDescription": "NIGHTLY-enabled build of official Feather releases. Sign it with your own certificate.",
       "subtitle": "On-device signing application",
       "tintColor": "848ef9",
-      "versions": []
+      "versions": [
+        {
+          "version": "2.9.0",
+          "date": "2026-07-05T02:11:53Z",
+          "downloadURL": "https://github.com/zHElEARN/feather-nightly-builds/releases/download/v2.9.0-nightly/Feather.ipa",
+          "size": 14115867
+        }
+      ],
+      "version": "2.9.0",
+      "versionDate": "2026-07-05T02:11:53Z",
+      "downloadURL": "https://github.com/zHElEARN/feather-nightly-builds/releases/download/v2.9.0-nightly/Feather.ipa"
     }
   ],
   "news": []
