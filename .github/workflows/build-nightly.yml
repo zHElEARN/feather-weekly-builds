@@ -28,8 +28,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="$(gh api repos/claration/Feather/releases/latest --jq -r '.tag_name')"
-          DATE="$(gh api repos/claration/Feather/releases/latest --jq -r '.published_at')"
+          TAG="$(gh api repos/claration/Feather/releases/latest --jq '.tag_name')"
+          DATE="$(gh api repos/claration/Feather/releases/latest --jq '.published_at')"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "date=${DATE}" >> "${GITHUB_OUTPUT}"
           echo "Latest official release: ${TAG} (${DATE})"
