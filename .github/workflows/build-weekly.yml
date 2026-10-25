@@ -25,14 +25,15 @@ env:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # Same image as Aidoku: macOS 27.0.1 with Xcode 27.1 preinstalled.
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.3.0.app
+        run: sudo xcode-select -s /Applications/Xcode_27.1.app
 
       - name: Resolve upstream main
         id: upstream
