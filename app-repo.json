@@ -1,28 +1,27 @@
 {
-  "name": "Feather Nightly Builds",
-  "identifier": "com.zhelearn.feather-nightly-builds",
+  "name": "Feather Weekly Builds",
+  "identifier": "com.zhelearn.feather-weekly-builds",
   "iconURL": "https://github.com/khcrysalis/Feather/blob/v1.x/iOS/Resources/Icons/Main/Mac@3x.png?raw=true",
-  "website": "https://github.com/zHElEARN/feather-nightly-builds",
+  "website": "https://github.com/zHElEARN/feather-weekly-builds",
   "apps": [
     {
-      "name": "Feather (NIGHTLY)",
+      "name": "Feather (Weekly)",
       "bundleIdentifier": "thewonderofyou.Feather",
       "developerName": "Samara",
       "iconURL": "https://github.com/khcrysalis/Feather/blob/v1.x/iOS/Resources/Icons/Main/Mac@3x.png?raw=true",
-      "localizedDescription": "NIGHTLY-enabled build of official Feather releases. Sign it with your own certificate.",
-      "subtitle": "On-device signing application",
       "tintColor": "848ef9",
+      "version": "2.9.0",
+      "versionDate": "2026-08-22T17:39:29Z",
+      "downloadURL": "https://github.com/zHElEARN/feather-weekly-builds/releases/download/v2.9.0-nightly/Feather.ipa",
+      "size": 14115867,
       "versions": [
         {
           "version": "2.9.0",
-          "date": "2026-07-05T02:11:53Z",
-          "downloadURL": "https://github.com/zHElEARN/feather-nightly-builds/releases/download/v2.9.0-nightly/Feather.ipa",
+          "date": "2026-08-22T17:39:29Z",
+          "downloadURL": "https://github.com/zHElEARN/feather-weekly-builds/releases/download/v2.9.0-nightly/Feather.ipa",
           "size": 14115867
         }
-      ],
-      "version": "2.9.0",
-      "versionDate": "2026-07-05T02:11:53Z",
-      "downloadURL": "https://github.com/zHElEARN/feather-nightly-builds/releases/download/v2.9.0-nightly/Feather.ipa"
+      ]
     }
   ],
   "news": []

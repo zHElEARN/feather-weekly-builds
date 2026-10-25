@@ -1,13 +1,22 @@
-# feather-nightly-builds
+# feather-weekly-builds
 
-GitHub Actions workflow that builds official [claration/Feather](https://github.com/claration/Feather) release tags with the `NIGHTLY` compilation condition enabled, publishes the IPA as a GitHub Release, and updates `app-repo.json`.
+Weekly build of [Feather](https://github.com/claration/feather) `main`, published as an
+AltStore/Feather source.
 
-## Usage
-
-1. Go to **Actions** → **Build Feather (NIGHTLY) from official Release** → **Run workflow**.
-2. The workflow checks the latest official release. If it was already built, it stops; otherwise it builds and publishes a `<official-tag>-nightly` release.
-3. Add this source in Feather:
+## Source
 
 ```
-https://raw.githubusercontent.com/zHElEARN/feather-nightly-builds/main/app-repo.json
+https://raw.githubusercontent.com/zHElEARN/feather-weekly-builds/main/app-repo.json
 ```
+
+## How it runs
+
+- Every Monday 00:00 UTC, or manually via **Actions → Build Feather (Weekly) → Run workflow**
+- Skips when `main` has not moved since the last successful build; tick `force` to rebuild anyway
+- Publishes a `weekly-YYYY.MM.DD` release and rewrites `app-repo.json` with that single version
+- Keeps the last 3 releases
+
+## Output
+
+- `Feather.ipa` — ad-hoc signed by `make iphoneos`; re-sign with your own certificate
+- Bundle identifier `thewonderofyou.Feather` (unchanged from upstream)
